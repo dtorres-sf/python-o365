@@ -40,6 +40,7 @@ class WorkbookSession(ApiComponent):
         'create_session': '/createSession',
         'refresh_session': '/refreshSession',
         'close_session': '/closeSession',
+        'commit_changes': '/commitChanges'
     }
 
     def __init__(self, *, parent=None, con=None, persist=True, **kwargs):
@@ -88,6 +89,14 @@ class WorkbookSession(ApiComponent):
         self.session_id = data.get('id')
 
         return True
+
+    def commit_session(self):
+        """ Commit session to sync persistent changes to the file. This is an undocumented API. """
+        if self.session_id:
+            url = self.build_url(self._endpoints.get('commit_changes'))
+            response = self.con.post(url, headers={'workbook-session-id': self.session_id})
+            return bool(response)
+        return False
 
     def refresh_session(self):
         """ Refresh the current session id """
