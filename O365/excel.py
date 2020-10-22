@@ -43,7 +43,7 @@ class WorkbookSession(ApiComponent):
         'commit_changes': '/commitChanges'
     }
 
-    def __init__(self, *, parent=None, con=None, persist=True, **kwargs):
+    def __init__(self, *, parent=None, con=None, persist=True, commit_explicitly=False, **kwargs):
         """ Create a workbook session object.
 
         :param parent: parent for this operation
@@ -63,6 +63,7 @@ class WorkbookSession(ApiComponent):
             main_resource=main_resource)
 
         self.persist = persist
+        self.commit_explicitly = commit_explicitly
 
         self.inactivity_limit = dt.timedelta(seconds=PERSISTENT_SESSION_INACTIVITY_MAX_AGE) \
             if persist else dt.timedelta(seconds=NON_PERSISTENT_SESSION_INACTIVITY_MAX_AGE)
@@ -82,7 +83,7 @@ class WorkbookSession(ApiComponent):
         """ Request a new session id """
 
         url = self.build_url(self._endpoints.get('create_session'))
-        response = self.con.post(url, data={'persistChanges': self.persist})
+        response = self.con.post(url, data={'persistChanges': self.persist, 'commitExplicitly': self.commit_explicitly})
         if not response:
             raise RuntimeError('Could not create session as requested by the user.')
         data = response.json()
@@ -1749,7 +1750,7 @@ class WorkBook(ApiComponent):
     table_constructor = Table
     named_range_constructor = NamedRange
 
-    def __init__(self, file_item, *, use_session=True, persist=True):
+    def __init__(self, file_item, *, use_session=True, persist=True, commit_explicitly=False):
         """ Create a workbook representation
 
         :param File file_item: the Drive File you want to interact with
@@ -1769,7 +1770,7 @@ class WorkBook(ApiComponent):
         super().__init__(protocol=file_item.protocol, main_resource=main_resource)
 
         persist = persist if use_session is True else True
-        self.session = WorkbookSession(parent=file_item, persist=persist, main_resource=main_resource)
+        self.session = WorkbookSession(parent=file_item, persist=persist, main_resource=main_resource, commit_explicitly=commit_explicitly)
 
         if use_session:
             self.session.create_session()
